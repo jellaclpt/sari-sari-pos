@@ -8,6 +8,7 @@ const flash = require('./middleware/flash');
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
 const posRoutes = require('./routes/pos');
+const settingsRoutes = require('./routes/settings');
 const helpers = require('./utils/helpers');
 const icons = require('./utils/icons');
 
@@ -57,6 +58,7 @@ app.get('/', (req, res) => {
 app.use('/', authRoutes);
 app.use('/admin', requireAuth, adminRoutes);
 app.use('/pos', requireAuth, posRoutes);
+app.use('/settings', requireAuth, settingsRoutes);
 
 app.use((req, res) => {
   res.status(404).render('error', { title: 'Not Found', message: 'Page not found.' });

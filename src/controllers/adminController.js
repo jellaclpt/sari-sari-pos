@@ -8,7 +8,10 @@ const { tempPassword, STORE_TZ, storeToday } = require('../utils/helpers');
 async function listUsers(req, res, next) {
   try {
     const [{ rows: users }, { rows: accessRequests }, { rows: resetRequests }] = await Promise.all([
-      query('SELECT id, username, full_name, role, active, created_at FROM users ORDER BY role, username'),
+      query(
+        `SELECT id, username, full_name, role, active, contact, must_change_password, created_at
+         FROM users ORDER BY active DESC, role, username`
+      ),
       query("SELECT * FROM access_requests WHERE status = 'pending' ORDER BY created_at"),
       query(
         `SELECT password_reset_requests.*, users.username, users.full_name, users.contact
@@ -22,21 +25,73 @@ async function listUsers(req, res, next) {
   }
 }
 
+const USERNAME_PATTERN = /^[a-z0-9._-]{3,30}$/;
+
 async function createUser(req, res, next) {
-  const { username, password, full_name, role } = req.body;
+  const username = String(req.body.username || '').trim().toLowerCase();
+  const fullName = String(req.body.full_name || '').trim();
+  const contact = String(req.body.contact || '').trim();
+  const password = String(req.body.password || '');
+  const role = req.body.role === 'admin' ? 'admin' : 'sales_rep';
+  // Without a password, the account gets a temporary one to hand over.
+  const temporary = !password;
   try {
-    const hash = bcrypt.hashSync(password, 10);
-    await query('INSERT INTO users (username, password_hash, full_name, role) VALUES ($1, $2, $3, $4)', [
-      username,
-      hash,
-      full_name,
-      role === 'admin' ? 'admin' : 'sales_rep',
-    ]);
-    setFlash(req, 'success', `User "${username}" created.`);
+    let problem = null;
+    if (!fullName) problem = 'Enter a full name.';
+    else if (!USERNAME_PATTERN.test(username)) problem = 'Usernames use 3–30 lowercase letters, numbers, dots, dashes or underscores.';
+    else if (!temporary && password.length < 6) problem = 'Passwords need at least 6 characters.';
+    if (!problem) {
+      const { rows } = await query('SELECT 1 FROM users WHERE LOWER(username) = $1', [username]);
+      if (rows.length) problem = `The username "${username}" is already taken.`;
+    }
+    if (problem) {
+      setFlash(req, 'error', problem);
+      return res.redirect('/admin/users');
+    }
+
+    const finalPassword = temporary ? tempPassword() : password;
+    await query(
+      `INSERT INTO users (username, password_hash, full_name, role, contact, must_change_password)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [username, bcrypt.hashSync(finalPassword, 10), fullName, role, contact || null, temporary]
+    );
+    if (temporary) {
+      setFlash(req, 'notice', `Created "${username}". Temporary password: ${finalPassword} — they'll choose their own when they sign in.`);
+    } else {
+      setFlash(req, 'success', `User "${username}" created.`);
+    }
     res.redirect('/admin/users');
   } catch (err) {
-    setFlash(req, 'error', `Could not create user: ${err.message}`);
+    next(err);
+  }
+}
+
+// Admin hands a user a new temporary password (e.g. they forgot theirs and
+// didn't file a request).
+async function resetUserPassword(req, res, next) {
+  const id = Number(req.params.id);
+  try {
+    if (id === req.session.user.id) {
+      setFlash(req, 'error', 'Change your own password from Settings.');
+      return res.redirect('/admin/users');
+    }
+    const password = tempPassword();
+    const { rows } = await query(
+      'UPDATE users SET password_hash = $1, must_change_password = TRUE WHERE id = $2 RETURNING username',
+      [bcrypt.hashSync(password, 10), id]
+    );
+    if (!rows.length) {
+      setFlash(req, 'error', 'User not found.');
+      return res.redirect('/admin/users');
+    }
+    await query(
+      "UPDATE password_reset_requests SET status = 'resolved', resolved_at = NOW() WHERE user_id = $1 AND status = 'pending'",
+      [id]
+    );
+    setFlash(req, 'notice', `Temporary password for "${rows[0].username}": ${password}. They'll choose a new one when they sign in.`);
     res.redirect('/admin/users');
+  } catch (err) {
+    next(err);
   }
 }
 
@@ -47,7 +102,8 @@ async function toggleUserActive(req, res, next) {
       setFlash(req, 'error', 'You cannot deactivate your own account.');
       return res.redirect('/admin/users');
     }
-    await query('UPDATE users SET active = NOT active WHERE id = $1', [id]);
+    const { rows } = await query('UPDATE users SET active = NOT active WHERE id = $1 RETURNING username, active', [id]);
+    if (rows.length) setFlash(req, 'success', `"${rows[0].username}" ${rows[0].active ? 'activated' : 'deactivated'}.`);
     res.redirect('/admin/users');
   } catch (err) {
     next(err);
@@ -194,16 +250,63 @@ async function dismissPasswordReset(req, res, next) {
 
 // ---- Inventory reports (submitted by sales reps) ----
 
+const REPORT_TYPES = ['restock', 'damaged', 'lost', 'correction'];
+
 async function listInventoryReports(req, res, next) {
+  const filters = {
+    type: REPORT_TYPES.includes(req.query.type) ? req.query.type : '',
+    q: typeof req.query.q === 'string' ? req.query.q.trim().slice(0, 80) : '',
+    staff: /^\d+$/.test(req.query.staff || '') ? req.query.staff : '',
+  };
+  const where = [];
+  const params = [];
+  if (filters.type) {
+    params.push(filters.type);
+    where.push(`inventory_reports.type = $${params.length}`);
+  }
+  if (filters.q) {
+    params.push(`%${filters.q}%`);
+    where.push(`COALESCE(products.name, '') ILIKE $${params.length}`);
+  }
+  if (filters.staff) {
+    params.push(Number(filters.staff));
+    where.push(`inventory_reports.user_id = $${params.length}`);
+  }
   try {
-    const { rows: reports } = await query(
-      `SELECT inventory_reports.*, COALESCE(products.name, 'Deleted product') AS product_name, users.full_name AS reported_by
-       FROM inventory_reports
-       LEFT JOIN products ON products.id = inventory_reports.product_id
-       JOIN users ON users.id = inventory_reports.user_id
-       ORDER BY inventory_reports.created_at DESC LIMIT 200`
-    );
-    res.render('admin/inventory_reports', { title: 'Inventory Reports', reports });
+    const [{ rows: reports }, { rows: summaryRows }, { rows: staff }] = await Promise.all([
+      query(
+        `SELECT inventory_reports.*, COALESCE(products.name, 'Deleted product') AS product_name,
+                products.unit, users.full_name AS reported_by
+         FROM inventory_reports
+         LEFT JOIN products ON products.id = inventory_reports.product_id
+         JOIN users ON users.id = inventory_reports.user_id
+         ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
+         ORDER BY inventory_reports.created_at DESC LIMIT 200`,
+        params
+      ),
+      // Totals for the last 30 days, by store-local date.
+      query(
+        `SELECT COUNT(*)::int AS reports,
+                COALESCE(SUM(quantity_change) FILTER (WHERE type = 'restock'), 0)::int AS added,
+                COALESCE(-SUM(quantity_change) FILTER (WHERE type IN ('damaged', 'lost')), 0)::int AS lost,
+                COALESCE(SUM(quantity_change) FILTER (WHERE type = 'correction'), 0)::int AS corrected
+         FROM inventory_reports
+         WHERE created_at >= ($2::date)::timestamp AT TIME ZONE $1`,
+        [STORE_TZ, storeToday(-29)]
+      ),
+      query(
+        `SELECT DISTINCT users.id, users.full_name FROM users
+         JOIN inventory_reports ON inventory_reports.user_id = users.id ORDER BY users.full_name`
+      ),
+    ]);
+    res.render('admin/inventory_reports', {
+      title: 'Inventory Reports',
+      reports,
+      summary: summaryRows[0],
+      staff,
+      filters,
+      reportTypes: REPORT_TYPES,
+    });
   } catch (err) {
     next(err);
   }
@@ -213,6 +316,7 @@ module.exports = {
   listUsers,
   createUser,
   toggleUserActive,
+  resetUserPassword,
   pendingRequestCount,
   approveAccessRequest,
   rejectAccessRequest,

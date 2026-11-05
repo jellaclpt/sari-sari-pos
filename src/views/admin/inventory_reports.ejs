@@ -1,29 +1,117 @@
 <%- include('../partials/head') %>
 <%- include('../partials/nav') %>
-<main class="container">
-  <h1>Inventory Reports</h1>
-  <p class="muted">Stock adjustments submitted by sales representatives (restocks, damaged/lost items, corrections).</p>
-
-  <div class="card">
-    <% if (reports.length === 0) { %>
-      <p class="muted">No inventory reports submitted yet.</p>
-    <% } else { %>
-      <table class="table">
-        <thead><tr><th>Product</th><th>Type</th><th>Change</th><th>Note</th><th>Reported By</th><th>When</th></tr></thead>
-        <tbody>
-          <% reports.forEach(r => { %>
-            <tr class="<%= r.quantity_change < 0 ? 'row-warning' : '' %>">
-              <td><%= r.product_name %></td>
-              <td><%= r.type %></td>
-              <td><%= r.quantity_change > 0 ? '+' : '' %><%= r.quantity_change %></td>
-              <td><%= r.note || '—' %></td>
-              <td><%= r.reported_by %></td>
-              <td><%= r.created_at %></td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
-    <% } %>
+<%
+  const TYPE_LABELS = { restock: 'Restock', damaged: 'Damaged', lost: 'Lost', correction: 'Correction' };
+  const TYPE_PILL = { restock: 'pill-ok', damaged: 'pill-bad', lost: 'pill-warn', correction: '' };
+  const qs = (over) => {
+    const p = new URLSearchParams();
+    const merged = { ...filters, ...over };
+    Object.entries(merged).forEach(([k, val]) => { if (val) p.set(k, val); });
+    const s = p.toString();
+    return s ? '?' + s : '';
+  };
+  const filtered = filters.type || filters.q || filters.staff;
+  const signed = (n) => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n).toLocaleString('en-US');
+%>
+<main class="page">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Inventory Reports</h1>
+      <p class="page-sub">Stock adjustments filed by sales reps: restocks, damaged or lost items, and corrections.</p>
+    </div>
   </div>
+
+  <section class="kpis">
+    <div class="panel kpi">
+      <p class="kpi-label">Reports · 30 days</p>
+      <p class="kpi-value"><%= summary.reports.toLocaleString('en-US') %></p>
+      <p class="kpi-delta"><%= typeof reportsToday !== 'undefined' ? reportsToday : 0 %> filed today</p>
+    </div>
+    <div class="panel kpi">
+      <p class="kpi-label">Units restocked</p>
+      <p class="kpi-value"><%= signed(summary.added) %></p>
+      <p class="kpi-delta">Last 30 days</p>
+    </div>
+    <div class="panel kpi">
+      <p class="kpi-label">Damaged or lost</p>
+      <p class="kpi-value"><%= summary.lost ? signed(-summary.lost) : '0' %></p>
+      <p class="kpi-delta">Last 30 days</p>
+    </div>
+    <div class="panel kpi">
+      <p class="kpi-label">Corrections</p>
+      <p class="kpi-value"><%= signed(summary.corrected) || '0' %></p>
+      <p class="kpi-delta">Net change, last 30 days</p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head panel-head-wrap">
+      <div class="seg" role="group" aria-label="Report type">
+        <a href="/admin/inventory-reports<%= qs({ type: '' }) %>" class="<%= !filters.type ? 'is-active' : '' %>">All</a>
+        <% reportTypes.forEach(t => { %>
+          <a href="/admin/inventory-reports<%= qs({ type: t }) %>" class="<%= filters.type === t ? 'is-active' : '' %>"><%= TYPE_LABELS[t] %></a>
+        <% }) %>
+      </div>
+      <form method="GET" action="/admin/inventory-reports" class="toolbar">
+        <% if (filters.type) { %><input type="hidden" name="type" value="<%= filters.type %>" /><% } %>
+        <div class="input-icon">
+          <%- icon('search', 16) %>
+          <input class="ainput" type="search" name="q" value="<%= filters.q %>" placeholder="Search product" aria-label="Search product" />
+        </div>
+        <select class="ainput toolbar-select" name="staff" aria-label="Reported by" onchange="this.form.submit()">
+          <option value="">All staff</option>
+          <% staff.forEach(s => { %><option value="<%= s.id %>" <%= String(s.id) === filters.staff ? 'selected' : '' %>><%= s.full_name %></option><% }) %>
+        </select>
+        <button type="submit" class="abtn abtn-dark"><%- icon('filter', 16) %>Apply</button>
+        <% if (filtered) { %><a href="/admin/inventory-reports" class="abtn abtn-ghost">Clear</a><% } %>
+      </form>
+    </div>
+
+    <% if (!reports.length) { %>
+      <div class="empty-state">
+        <span class="empty-icon"><%- icon('clipboard', 22) %></span>
+        <p class="strong"><%= filtered ? 'No reports match these filters.' : 'No inventory reports yet.' %></p>
+        <p class="sub"><%= filtered ? 'Try another type, product or staff member.' : 'Reports appear here when a sales rep files one from their Inventory screen.' %></p>
+      </div>
+    <% } else { %>
+      <div class="table-wrap">
+        <table class="atable">
+          <thead>
+            <tr><th>Product</th><th>Type</th><th class="num">Change</th><th>Note</th><th>Reported by</th><th>When</th></tr>
+          </thead>
+          <tbody>
+            <% reports.forEach(r => { %>
+              <tr>
+                <td>
+                  <div class="product-cell">
+                    <span class="thumb"><%- icon(productIconName(r.product_name), 20) %></span>
+                    <span class="strong"><%= r.product_name %></span>
+                  </div>
+                </td>
+                <td><span class="pill pill-dot <%= TYPE_PILL[r.type] %>"><%= TYPE_LABELS[r.type] || r.type %></span></td>
+                <td class="num">
+                  <span class="qty-change <%= r.quantity_change > 0 ? 'is-up' : 'is-down' %>">
+                    <%- icon(r.quantity_change > 0 ? 'arrowUp' : 'arrowDown', 14) %><%= signed(r.quantity_change) %>
+                  </span>
+                  <% if (r.unit) { %><span class="sub"><%= r.unit %></span><% } %>
+                </td>
+                <td class="note-cell"><%= r.note || '—' %></td>
+                <td style="white-space: nowrap">
+                  <div class="user-cell">
+                    <span class="avatar avatar-sm avatar-soft"><%= h.initials(r.reported_by) %></span>
+                    <span><%= h.shortName(r.reported_by) %></span>
+                  </div>
+                </td>
+                <td style="white-space: nowrap"><span class="sub"><%= h.shortDateTime(r.created_at) %></span></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-foot">
+        <span>Showing <%= reports.length %> report<%= reports.length === 1 ? '' : 's' %><%= reports.length === 200 ? ' (most recent 200)' : '' %></span>
+      </div>
+    <% } %>
+  </section>
 </main>
 <%- include('../partials/foot') %>

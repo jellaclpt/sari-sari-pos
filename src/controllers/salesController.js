@@ -1,5 +1,6 @@
 const { query, getClient } = require('../config/db');
 const { setFlash } = require('../middleware/flash');
+const { getStoreSettings } = require('../utils/storeSettings');
 const { STORE_TZ, PAYMENT_LABELS, storeToday, pageList, toCsv, shortDateTime } = require('../utils/helpers');
 
 const PAGE_SIZE = 10;
@@ -109,13 +110,14 @@ async function listSales(req, res, next) {
     );
 
     const selectedId = /^\d+$/.test(req.query.selected || '') ? Number(req.query.selected) : sales[0] && sales[0].id;
-    const selected = selectedId ? await loadSale(selectedId) : null;
+    const [selected, store] = await Promise.all([selectedId ? loadSale(selectedId) : null, getStoreSettings()]);
 
     const paid = totals.cash + totals.gcash + totals.card;
     const split = ['cash', 'gcash', 'card'].map((m) => (paid ? Math.round((totals[m] / paid) * 100) : 0));
 
     res.render('admin/sales', {
       title: 'Sales',
+      store,
       filters: f,
       cashiers,
       totals: { ...totals, net: totals.gross - totals.refunds, split, hasPaid: paid > 0 },

@@ -1,108 +1,289 @@
 <%- include('../partials/head') %>
 <%- include('../partials/nav') %>
-<main class="container">
-  <h1>Users</h1>
+<%
+  const activeCount = users.filter(u => u.active).length;
+  const adminCount = users.filter(u => u.active && u.role === 'admin').length;
+  const repCount = users.filter(u => u.active && u.role === 'sales_rep').length;
+  const pendingCount = accessRequests.length + resetRequests.length;
+%>
+<main class="page">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Users</h1>
+      <p class="page-sub">Staff accounts, access requests and password resets.</p>
+    </div>
+    <button type="button" class="abtn abtn-dark" id="openAddUser"><%- icon('plus', 16) %>Add user</button>
+  </div>
+
+  <section class="kpis">
+    <div class="panel kpi">
+      <p class="kpi-label">Active accounts</p>
+      <p class="kpi-value"><%= activeCount %></p>
+      <p class="kpi-delta"><%= users.length - activeCount %> inactive</p>
+    </div>
+    <div class="panel kpi">
+      <p class="kpi-label">Admins</p>
+      <p class="kpi-value"><%= adminCount %></p>
+    </div>
+    <div class="panel kpi">
+      <p class="kpi-label">Sales reps</p>
+      <p class="kpi-value"><%= repCount %></p>
+    </div>
+    <div class="panel kpi<%= pendingCount ? ' kpi-dark' : '' %>">
+      <p class="kpi-label">Waiting for review</p>
+      <p class="kpi-value"><%= pendingCount %></p>
+      <p class="kpi-delta"><%= accessRequests.length %> access · <%= resetRequests.length %> reset</p>
+    </div>
+  </section>
 
   <% if (accessRequests.length) { %>
-    <div class="card">
-      <h2>Access Requests</h2>
-      <p class="muted">Approving creates the account with a temporary password for you to send them. They choose their own on first sign-in.</p>
-      <div class="table-scroll">
-        <table class="table">
-          <thead><tr><th>Full Name</th><th>Username</th><th>Contact</th><th>Role</th><th>Note</th><th>Requested</th><th></th></tr></thead>
-          <tbody>
-            <% accessRequests.forEach(r => { %>
-              <tr>
-                <td><%= r.full_name %></td>
-                <td><%= r.username %></td>
-                <td><%= r.contact %></td>
-                <td><%= r.role === 'admin' ? 'Admin' : 'Sales Rep' %></td>
-                <td><%= r.note || '—' %></td>
-                <td><%= r.created_at.toLocaleString() %></td>
-                <td class="nowrap">
-                  <form method="POST" action="/admin/access-requests/<%= r.id %>/approve" class="inline-form">
-                    <button type="submit" class="btn btn-small btn-primary">Approve</button>
-                  </form>
-                  <form method="POST" action="/admin/access-requests/<%= r.id %>/reject" class="inline-form">
-                    <button type="submit" class="btn btn-small btn-danger">Reject</button>
-                  </form>
-                </td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
+    <section class="panel section-gap">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">Access requests</h2>
+          <p class="panel-sub">Approving creates the account with a temporary password for you to send them. They choose their own on first sign-in.</p>
+        </div>
+        <span class="pill pill-warn"><%= accessRequests.length %> pending</span>
       </div>
-    </div>
+      <ul class="request-list">
+        <% accessRequests.forEach(r => { %>
+          <li>
+            <span class="avatar avatar-soft"><%= h.initials(r.full_name) %></span>
+            <div class="item-main">
+              <span class="strong"><%= r.full_name %></span>
+              <span class="sub">@<%= r.username %> · <%= r.contact %> · <%= r.role === 'admin' ? 'Admin' : 'Sales Rep' %> · <%= h.shortDateTime(r.created_at) %></span>
+              <% if (r.note) { %><span class="request-note">“<%= r.note %>”</span><% } %>
+            </div>
+            <div class="row-actions">
+              <form method="POST" action="/admin/access-requests/<%= r.id %>/reject">
+                <button type="submit" class="abtn abtn-sm abtn-ghost">Reject</button>
+              </form>
+              <form method="POST" action="/admin/access-requests/<%= r.id %>/approve">
+                <button type="submit" class="abtn abtn-sm abtn-dark"><%- icon('check', 14) %>Approve</button>
+              </form>
+            </div>
+          </li>
+        <% }) %>
+      </ul>
+    </section>
   <% } %>
 
   <% if (resetRequests.length) { %>
-    <div class="card">
-      <h2>Password Reset Requests</h2>
-      <p class="muted">Setting a temporary password replaces their current one. They choose a new one on their next sign-in.</p>
-      <div class="table-scroll">
-        <table class="table">
-          <thead><tr><th>Username</th><th>Full Name</th><th>Contact</th><th>Message</th><th>Requested</th><th></th></tr></thead>
-          <tbody>
-            <% resetRequests.forEach(r => { %>
-              <tr>
-                <td><%= r.username %></td>
-                <td><%= r.full_name %></td>
-                <td><%= r.contact || '—' %></td>
-                <td><%= r.message || '—' %></td>
-                <td><%= r.created_at.toLocaleString() %></td>
-                <td class="nowrap">
-                  <form method="POST" action="/admin/password-resets/<%= r.id %>/resolve" class="inline-form">
-                    <button type="submit" class="btn btn-small btn-primary">Set temporary password</button>
-                  </form>
-                  <form method="POST" action="/admin/password-resets/<%= r.id %>/dismiss" class="inline-form">
-                    <button type="submit" class="btn btn-small btn-secondary">Dismiss</button>
-                  </form>
-                </td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
+    <section class="panel section-gap">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">Password reset requests</h2>
+          <p class="panel-sub">Setting a temporary password replaces their current one. They choose a new one on their next sign-in.</p>
+        </div>
+        <span class="pill pill-warn"><%= resetRequests.length %> pending</span>
       </div>
-    </div>
+      <ul class="request-list">
+        <% resetRequests.forEach(r => { %>
+          <li>
+            <span class="avatar avatar-soft"><%- icon('key', 16) %></span>
+            <div class="item-main">
+              <span class="strong"><%= r.full_name %></span>
+              <span class="sub">@<%= r.username %><%= r.contact ? ' · ' + r.contact : '' %> · <%= h.shortDateTime(r.created_at) %></span>
+              <% if (r.message) { %><span class="request-note">“<%= r.message %>”</span><% } %>
+            </div>
+            <div class="row-actions">
+              <form method="POST" action="/admin/password-resets/<%= r.id %>/dismiss">
+                <button type="submit" class="abtn abtn-sm abtn-ghost">Dismiss</button>
+              </form>
+              <form method="POST" action="/admin/password-resets/<%= r.id %>/resolve">
+                <button type="submit" class="abtn abtn-sm abtn-dark"><%- icon('key', 14) %>Set temporary password</button>
+              </form>
+            </div>
+          </li>
+        <% }) %>
+      </ul>
+    </section>
   <% } %>
 
-  <div class="card">
-    <h2>Add User</h2>
-    <form method="POST" action="/admin/users" class="form-grid">
-      <label>Username <input type="text" name="username" required /></label>
-      <label>Full Name <input type="text" name="full_name" required /></label>
-      <label>Password <input type="password" name="password" required minlength="6" /></label>
-      <label>Role
-        <select name="role">
-          <option value="sales_rep">Sales Representative</option>
+  <section class="panel">
+    <div class="panel-head panel-head-wrap">
+      <div>
+        <h2 class="panel-title">All users</h2>
+        <p class="panel-sub"><%= users.length %> account<%= users.length === 1 ? '' : 's' %></p>
+      </div>
+      <div class="toolbar">
+        <div class="input-icon">
+          <%- icon('search', 16) %>
+          <input class="ainput" type="search" id="userSearch" placeholder="Search name or username" aria-label="Search users" />
+        </div>
+        <div class="seg" role="group" aria-label="Filter users">
+          <a href="#" class="is-active" data-filter="all">All</a>
+          <a href="#" data-filter="admin">Admins</a>
+          <a href="#" data-filter="sales_rep">Sales reps</a>
+          <a href="#" data-filter="inactive">Inactive</a>
+        </div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="atable" id="usersTable">
+        <thead>
+          <tr><th>User</th><th>Role</th><th>Contact</th><th>Status</th><th>Joined</th><th class="num">Actions</th></tr>
+        </thead>
+        <tbody>
+          <% users.forEach(u => { const isMe = u.id === currentUser.id; %>
+            <tr class="<%= u.active ? '' : 'is-inactive' %>" data-role="<%= u.role %>" data-active="<%= u.active %>"
+                data-search="<%= (u.full_name + ' ' + u.username).toLowerCase() %>">
+              <td>
+                <div class="user-cell">
+                  <span class="avatar<%= u.role === 'admin' ? '' : ' avatar-soft' %>"><%= h.initials(u.full_name) %></span>
+                  <span>
+                    <span class="strong"><%= u.full_name %><% if (isMe) { %> <span class="you">You</span><% } %></span>
+                    <span class="sub mono">@<%= u.username %></span>
+                  </span>
+                </div>
+              </td>
+              <td><span class="pill<%= u.role === 'admin' ? ' pill-dark' : '' %>"><%= u.role === 'admin' ? 'Admin' : 'Sales Rep' %></span></td>
+              <td><%= u.contact || '—' %></td>
+              <td>
+                <% if (!u.active) { %><span class="pill pill-dot">Inactive</span>
+                <% } else if (u.must_change_password) { %><span class="pill pill-dot pill-warn" title="Must choose a new password at next sign-in">Temp password</span>
+                <% } else { %><span class="pill pill-dot pill-ok">Active</span><% } %>
+              </td>
+              <td style="white-space: nowrap"><%= h.longDate(u.created_at) %></td>
+              <td class="num">
+                <% if (isMe) { %>
+                  <a href="/settings" class="abtn abtn-sm abtn-ghost"><%- icon('settings', 14) %>Settings</a>
+                <% } else { %>
+                  <div class="row-actions">
+                    <% if (u.active) { %>
+                      <form method="POST" action="/admin/users/<%= u.id %>/reset-password"
+                            data-confirm="Give @<%= u.username %> a new temporary password? Their current password will stop working.">
+                        <button type="submit" class="abtn abtn-sm" title="Set a temporary password"><%- icon('key', 14) %>Reset</button>
+                      </form>
+                    <% } %>
+                    <form method="POST" action="/admin/users/<%= u.id %>/toggle-active"
+                          <% if (u.active) { %>data-confirm="Deactivate @<%= u.username %>? They won't be able to sign in until you activate them again."<% } %>>
+                      <button type="submit" class="abtn abtn-sm<%= u.active ? ' abtn-danger-outline' : '' %>"><%= u.active ? 'Deactivate' : 'Activate' %></button>
+                    </form>
+                  </div>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+      <p class="empty" id="usersEmpty" hidden>No users match.</p>
+    </div>
+  </section>
+</main>
+
+<div class="modal-backdrop" id="addUserModal" hidden>
+  <form method="POST" action="/admin/users" class="modal modal-wide" role="dialog" aria-modal="true" aria-labelledby="addUserTitle">
+    <div class="modal-head">
+      <div class="modal-icon is-neutral"><%- icon('users', 20) %></div>
+      <h2 id="addUserTitle">Add user</h2>
+    </div>
+    <div class="modal-grid">
+      <div class="afield">
+        <label for="new_full_name">Full name</label>
+        <input class="ainput" id="new_full_name" name="full_name" required maxlength="80" />
+      </div>
+      <div class="afield">
+        <label for="new_username">Username</label>
+        <input class="ainput" id="new_username" name="username" required pattern="[a-z0-9._\-]{3,30}" maxlength="30"
+               autocapitalize="none" placeholder="e.g. juana.cruz" title="3–30 lowercase letters, numbers, dots, dashes or underscores" />
+      </div>
+      <div class="afield">
+        <label for="new_role">Role</label>
+        <select class="ainput" id="new_role" name="role">
+          <option value="sales_rep">Sales Rep</option>
           <option value="admin">Admin</option>
         </select>
-      </label>
-      <button type="submit" class="btn btn-primary">Create User</button>
-    </form>
-  </div>
+      </div>
+      <div class="afield">
+        <label for="new_contact">Contact <span class="optional">(optional)</span></label>
+        <input class="ainput" id="new_contact" name="contact" maxlength="80" placeholder="Email or mobile" />
+      </div>
+      <div class="afield afield-wide">
+        <label for="new_password">Password <span class="optional">(optional)</span></label>
+        <input class="ainput" type="password" id="new_password" name="password" minlength="6" autocomplete="new-password"
+               placeholder="Leave blank to generate a temporary one" />
+      </div>
+    </div>
+    <p>Leave the password blank and you'll get a temporary one to send them; they choose their own on first sign-in.</p>
+    <div class="modal-actions">
+      <button type="button" class="abtn" data-close>Cancel</button>
+      <button type="submit" class="abtn abtn-dark"><%- icon('plus', 16) %>Create user</button>
+    </div>
+  </form>
+</div>
 
-  <div class="card">
-    <h2>All Users</h2>
-    <table class="table">
-      <thead><tr><th>Username</th><th>Full Name</th><th>Role</th><th>Status</th><th>Created</th><th></th></tr></thead>
-      <tbody>
-        <% users.forEach(u => { %>
-          <tr class="<%= !u.active ? 'row-muted' : '' %>">
-            <td><%= u.username %></td>
-            <td><%= u.full_name %></td>
-            <td><%= u.role === 'admin' ? 'Admin' : 'Sales Rep' %></td>
-            <td><%= u.active ? 'Active' : 'Inactive' %></td>
-            <td><%= u.created_at %></td>
-            <td>
-              <form method="POST" action="/admin/users/<%= u.id %>/toggle-active" class="inline-form">
-                <button type="submit" class="btn btn-small"><%= u.active ? 'Deactivate' : 'Activate' %></button>
-              </form>
-            </td>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
+<div class="modal-backdrop" id="confirmModal" hidden>
+  <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmText">
+    <div class="modal-head">
+      <div class="modal-icon"><%- icon('users', 20) %></div>
+      <h2 id="confirmTitle">Are you sure?</h2>
+    </div>
+    <p id="confirmText"></p>
+    <div class="modal-actions">
+      <button type="button" class="abtn" data-close>Cancel</button>
+      <button type="button" class="abtn abtn-danger" id="confirmGo">Continue</button>
+    </div>
   </div>
-</main>
+</div>
+
+<script>
+  (function () {
+    function wireModal(modal, opener) {
+      var last = null;
+      var open = function () { last = document.activeElement; modal.hidden = false; var f = modal.querySelector('input, button'); if (f) f.focus(); };
+      var close = function () { modal.hidden = true; if (last) last.focus(); };
+      if (opener) opener.addEventListener('click', open);
+      modal.querySelectorAll('[data-close]').forEach(function (b) { b.addEventListener('click', close); });
+      modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modal.hidden) close(); });
+      return { open: open, close: close };
+    }
+    wireModal(document.getElementById('addUserModal'), document.getElementById('openAddUser'));
+
+    var confirmModal = document.getElementById('confirmModal');
+    var confirm = wireModal(confirmModal);
+    var pending = null;
+    document.querySelectorAll('form[data-confirm]').forEach(function (form) {
+      form.addEventListener('submit', function (e) {
+        if (form.dataset.confirmed) return;
+        e.preventDefault();
+        pending = form;
+        document.getElementById('confirmText').textContent = form.dataset.confirm;
+        confirm.open();
+        document.getElementById('confirmGo').focus();
+      });
+    });
+    document.getElementById('confirmGo').addEventListener('click', function () {
+      if (!pending) return;
+      pending.dataset.confirmed = '1';
+      pending.submit();
+    });
+
+    var rows = Array.prototype.slice.call(document.querySelectorAll('#usersTable tbody tr'));
+    var search = document.getElementById('userSearch');
+    var filter = 'all';
+    function apply() {
+      var q = search.value.trim().toLowerCase();
+      var shown = 0;
+      rows.forEach(function (tr) {
+        var ok = (!q || tr.dataset.search.indexOf(q) !== -1) &&
+          (filter === 'all' ||
+           (filter === 'inactive' ? tr.dataset.active === 'false' : tr.dataset.role === filter && tr.dataset.active === 'true'));
+        tr.hidden = !ok;
+        if (ok) shown++;
+      });
+      document.getElementById('usersEmpty').hidden = shown > 0;
+    }
+    search.addEventListener('input', apply);
+    document.querySelectorAll('[data-filter]').forEach(function (a) {
+      a.addEventListener('click', function (e) {
+        e.preventDefault();
+        document.querySelectorAll('[data-filter]').forEach(function (b) { b.classList.toggle('is-active', b === a); });
+        filter = a.dataset.filter;
+        apply();
+      });
+    });
+  })();
+</script>
 <%- include('../partials/foot') %>

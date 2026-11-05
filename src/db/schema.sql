@@ -168,3 +168,9 @@ DO $$ BEGIN
     INSERT INTO app_flags (name) VALUES ('attribute_options_seeded') ON CONFLICT DO NOTHING;
   END IF;
 END $$;
+
+-- Store details shown on receipts, editable from Settings (admin only).
+CREATE TABLE IF NOT EXISTS store_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL DEFAULT ''
+);
