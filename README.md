@@ -7,9 +7,10 @@ A point-of-sale system for a small sari-sari store, with separate **Admin** and 
 **Admin**
 - Dashboard: revenue, orders, average order value and items sold for today / 7 days / 30 days (compared with the previous period), a sales trend chart, sales by category, top products, low-stock alerts, and today's transactions
 - Products: search and filter by category group and type, sizes and colors as tags, product photos, an active toggle, edit in a side panel, delete (past sales are kept), and CSV import (download the template from the Import dialog)
-- User management (create/deactivate accounts, assign roles)
+- Users: add accounts (with a password or a generated temporary one), search and filter by role, deactivate/activate, reset a user's password, and review access and password-reset requests
 - Sales: filter by date, cashier, payment method or receipt/product search; gross, refunds, net and payment split; receipt preview with print; refunds that return items to stock; CSV export
-- Visibility into every inventory report submitted by cashiers
+- Inventory Reports: every stock adjustment filed by cashiers, filterable by type, product and staff, with 30-day totals
+- Settings ▸ Store details: store name, address, contact and a thank-you message printed on receipts
 
 **Sales Representative (Cashier)**
 - POS screen: search/scan products, build a cart, take Cash (with change), GCash or Card (with a reference no.), print a receipt
@@ -20,6 +21,7 @@ A point-of-sale system for a small sari-sari store, with separate **Admin** and 
 - Request access at `/request-access` — new staff send their name, preferred username, contact and role; an admin approves it from Admin ▸ Users, which creates the account with a temporary password
 - Forgot password at `/forgot-password` — sends a reset request to the admin, who sets a temporary password from Admin ▸ Users
 - Anyone signing in with a temporary password must choose their own before using the app
+- Settings at `/settings` (admins and cashiers): edit your name and contact, and change your password
 
 ## Tech stack
 

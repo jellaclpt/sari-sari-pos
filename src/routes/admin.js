@@ -25,7 +25,8 @@ router.post('/product-options/delete', products.removeOption);
 
 router.get('/users', ctrl.listUsers);
 router.post('/users', ctrl.createUser);
-router.post('/users/:id/toggle-active', ctrl.toggleUserActive);
+router.post('/users/:id(\\d+)/toggle-active', ctrl.toggleUserActive);
+router.post('/users/:id(\\d+)/reset-password', ctrl.resetUserPassword);
 router.post('/access-requests/:id/approve', ctrl.approveAccessRequest);
 router.post('/access-requests/:id/reject', ctrl.rejectAccessRequest);
 router.post('/password-resets/:id/resolve', ctrl.resolvePasswordReset);

@@ -9,6 +9,7 @@
       badge: typeof reportsToday !== 'undefined' ? reportsToday : 0, badgeTitle: 'Reports filed today' },
     { href: '/admin/users', label: 'Users', icon: 'users',
       badge: typeof pendingRequests !== 'undefined' ? pendingRequests : 0, badgeTitle: 'Requests waiting for review' },
+    { href: '/settings', label: 'Settings', icon: 'settings' },
   ];
 %>
 <aside class="sidebar">
@@ -29,11 +30,13 @@
     <% }) %>
   </nav>
   <div class="sidebar-user">
-    <span class="avatar"><%= h.initials(currentUser.fullName) %></span>
-    <span class="sidebar-user-text">
-      <strong><%= currentUser.fullName %></strong>
-      <span>Administrator</span>
-    </span>
+    <a href="/settings" class="sidebar-user-link" title="Account settings">
+      <span class="avatar"><%= h.initials(currentUser.fullName) %></span>
+      <span class="sidebar-user-text">
+        <strong><%= currentUser.fullName %></strong>
+        <span>Administrator</span>
+      </span>
+    </a>
     <form method="POST" action="/logout">
       <button type="submit" class="icon-button" title="Sign out" aria-label="Sign out"><%- icon('logout', 18) %></button>
     </form>
@@ -87,6 +90,7 @@
     <% if (currentUser && currentUser.role === 'sales_rep') { %>
       <a href="/pos">Point of Sale</a>
       <a href="/pos/inventory">Inventory</a>
+      <a href="/settings">Settings</a>
     <% } %>
   </nav>
   <div class="topbar-user">

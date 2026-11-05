@@ -2,7 +2,9 @@
 <%- include('../partials/nav') %>
 <main class="container">
   <div class="card receipt">
-    <h1>Receipt</h1>
+    <h1><%= store.store_name %></h1>
+    <% if (store.store_address) { %><p class="muted" style="white-space: pre-line"><%= store.store_address %></p><% } %>
+    <% if (store.store_contact) { %><p class="muted"><%= store.store_contact %></p><% } %>
     <p><strong>Receipt No:</strong> <%= sale.receipt_no %></p>
     <p><strong>Date:</strong> <%= sale.created_at %></p>
     <table class="table">
@@ -24,6 +26,7 @@
         <tr><td colspan="3">Change</td><td><%= peso(sale.change_amount) %></td></tr>
       </tfoot>
     </table>
+    <% if (store.receipt_footer) { %><p class="muted" style="text-align: center; white-space: pre-line"><%= store.receipt_footer %></p><% } %>
     <div class="receipt-actions">
       <button onclick="window.print()" class="btn btn-secondary">Print</button>
       <a href="/pos" class="btn btn-primary">New Sale</a>

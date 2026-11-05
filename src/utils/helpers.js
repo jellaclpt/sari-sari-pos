@@ -45,6 +45,11 @@ function longDateTime(d) {
   return `${formatInTz(d, { month: 'short', day: 'numeric', year: 'numeric' })} ${timeOnly(d)}`;
 }
 
+// "Oct 19, 2026"
+function longDate(d) {
+  return formatInTz(d, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 // "8:42 PM"
 function timeOnly(d) {
   return formatInTz(d, { hour: 'numeric', minute: '2-digit' });
@@ -118,6 +123,7 @@ module.exports = {
   dateOnly,
   shortDateTime,
   longDateTime,
+  longDate,
   timeOnly,
   storeToday,
   pageList,

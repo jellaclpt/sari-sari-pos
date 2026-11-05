@@ -104,7 +104,9 @@
       <aside class="panel receipt-card" aria-label="Receipt <%= selected.receipt_no %>">
         <div class="receipt-top">
           <img src="/Luminous%20Metallic%20Crescent%20Emblem.png" alt="" />
-          <span class="sidebar-wordmark">MOON</span>
+          <span class="sidebar-wordmark"><%= store.store_name %></span>
+          <% if (store.store_address) { %><p class="receipt-store-line"><%= store.store_address %></p><% } %>
+          <% if (store.store_contact) { %><p class="receipt-store-line"><%= store.store_contact %></p><% } %>
           <p>Receipt <%= selected.receipt_no %> · <%= h.longDateTime(selected.created_at) %></p>
         </div>
         <div class="receipt-body">
@@ -127,6 +129,7 @@
             </span>
             <span style="white-space: nowrap">Cashier: <%= (selected.cashier || '').split(' ')[0] %></span>
           </div>
+          <% if (store.receipt_footer) { %><p class="receipt-footer"><%= store.receipt_footer %></p><% } %>
           <% if (selected.status === 'refunded') { %>
             <p class="receipt-note">Refunded <%= h.shortDateTime(selected.refunded_at) %><%= selected.refunded_by_name ? ' by ' + selected.refunded_by_name : '' %></p>
           <% } %>

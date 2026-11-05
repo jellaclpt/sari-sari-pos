@@ -1,0 +1,176 @@
+<%- include('partials/head') %>
+<%- include('partials/nav') %>
+<%
+  const tabs = [
+    { id: 'profile', label: 'Profile', icon: 'user', sub: 'Your name and contact' },
+    { id: 'password', label: 'Password', icon: 'lock', sub: 'Change your sign-in password' },
+  ];
+  if (isAdmin) tabs.push({ id: 'store', label: 'Store details', icon: 'store', sub: 'What prints on receipts' });
+  const v = (key, fallback) => (key in values ? values[key] : fallback);
+  const err = (key) => errors[key] ? `<p class="field-error" id="${key}-error">${errors[key]}</p>` : '';
+  const invalid = (key) => errors[key] ? ` is-invalid" aria-invalid="true" aria-describedby="${key}-error` : '';
+%>
+<main class="page">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Settings</h1>
+      <p class="page-sub">Manage your account<%= isAdmin ? ' and the store details on receipts' : '' %>.</p>
+    </div>
+  </div>
+
+  <div class="settings-grid">
+    <nav class="panel settings-nav" aria-label="Settings sections">
+      <% tabs.forEach(t => { const active = t.id === section; %>
+        <a href="/settings?section=<%= t.id %>" class="settings-tab<%= active ? ' is-active' : '' %>"<%- active ? ' aria-current="page"' : '' %>>
+          <%- icon(t.icon, 18) %>
+          <span><span class="strong"><%= t.label %></span><span class="sub"><%= t.sub %></span></span>
+        </a>
+      <% }) %>
+    </nav>
+
+    <div class="settings-body">
+      <% if (section === 'profile') { %>
+        <section class="panel">
+          <div class="profile-card">
+            <span class="avatar avatar-lg"><%= h.initials(account.full_name) %></span>
+            <div>
+              <p class="strong profile-name"><%= account.full_name %></p>
+              <p class="sub">@<%= account.username %> · Member since <%= h.longDate(account.created_at) %></p>
+            </div>
+            <span class="pill <%= account.role === 'admin' ? 'pill-dark' : '' %>"><%= account.role === 'admin' ? 'Admin' : 'Sales Rep' %></span>
+          </div>
+        </section>
+
+        <form method="POST" action="/settings/profile" class="panel settings-form" novalidate>
+          <div class="panel-head">
+            <div>
+              <h2 class="panel-title">Profile</h2>
+              <p class="panel-sub">Your name appears on sales and inventory reports.</p>
+            </div>
+          </div>
+          <div class="settings-fields">
+            <div class="afield">
+              <label for="username">Username</label>
+              <input class="ainput" id="username" value="<%= account.username %>" disabled />
+              <p class="field-hint">Usernames can't be changed.</p>
+            </div>
+            <div class="afield">
+              <label for="full_name">Full name</label>
+              <input class="ainput<%- invalid('full_name') %>" id="full_name" name="full_name" required maxlength="80"
+                     value="<%= v('full_name', account.full_name) %>" autocomplete="name" />
+              <%- err('full_name') %>
+            </div>
+            <div class="afield afield-wide">
+              <label for="contact">Email or mobile number <span class="optional">(optional)</span></label>
+              <input class="ainput<%- invalid('contact') %>" id="contact" name="contact" maxlength="80"
+                     value="<%= v('contact', account.contact || '') %>" placeholder="e.g. 0917 123 4567" />
+              <%- err('contact') %>
+            </div>
+          </div>
+          <div class="settings-actions">
+            <button type="submit" class="abtn abtn-dark"><%- icon('check', 16) %>Save profile</button>
+          </div>
+        </form>
+      <% } %>
+
+      <% if (section === 'password') { %>
+        <form method="POST" action="/settings/password" class="panel settings-form" novalidate>
+          <div class="panel-head">
+            <div>
+              <h2 class="panel-title">Change password</h2>
+              <p class="panel-sub">Enter your current password, then choose a new one with at least 6 characters.</p>
+            </div>
+          </div>
+          <div class="settings-fields settings-fields-single">
+            <div class="afield">
+              <label for="current_password">Current password</label>
+              <input class="ainput<%- invalid('current_password') %>" type="password" data-pw id="current_password" name="current_password"
+                     autocomplete="current-password" required />
+              <%- err('current_password') %>
+            </div>
+            <div class="afield">
+              <label for="password">New password</label>
+              <input class="ainput<%- invalid('password') %>" type="password" data-pw id="password" name="password"
+                     autocomplete="new-password" minlength="6" required placeholder="At least 6 characters" />
+              <%- err('password') %>
+            </div>
+            <div class="afield">
+              <label for="confirm_password">Confirm new password</label>
+              <input class="ainput<%- invalid('confirm_password') %>" type="password" data-pw id="confirm_password" name="confirm_password"
+                     autocomplete="new-password" required />
+              <%- err('confirm_password') %>
+            </div>
+            <label class="check-row"><input type="checkbox" id="showPasswords" /> Show passwords</label>
+          </div>
+          <div class="settings-actions">
+            <button type="submit" class="abtn abtn-dark"><%- icon('key', 16) %>Update password</button>
+          </div>
+        </form>
+        <p class="settings-note">Forgot your current password? Sign out and use <strong>Forgot password</strong> on the sign-in page<%= isAdmin ? ', or have another admin reset it from Users' : ' to ask an admin for a temporary one' %>.</p>
+      <% } %>
+
+      <% if (section === 'store' && isAdmin) { %>
+        <div class="store-grid">
+          <form method="POST" action="/settings/store" class="panel settings-form" novalidate>
+            <div class="panel-head">
+              <div>
+                <h2 class="panel-title">Store details</h2>
+                <p class="panel-sub">Printed at the top and bottom of every receipt.</p>
+              </div>
+            </div>
+            <div class="settings-fields settings-fields-single">
+              <% Object.entries(storeFields).forEach(([key, def]) => { %>
+                <div class="afield">
+                  <label for="<%= key %>"><%= def.label %><% if (key !== 'store_name') { %> <span class="optional">(optional)</span><% } %></label>
+                  <% if (key === 'receipt_footer' || key === 'store_address') { %>
+                    <textarea class="ainput<%- invalid(key) %>" id="<%= key %>" name="<%= key %>" rows="2" maxlength="<%= def.max %>" data-preview="<%= key %>"><%= store[key] %></textarea>
+                  <% } else { %>
+                    <input class="ainput<%- invalid(key) %>" id="<%= key %>" name="<%= key %>" maxlength="<%= def.max %>" value="<%= store[key] %>" data-preview="<%= key %>" />
+                  <% } %>
+                  <%- err(key) %>
+                </div>
+              <% }) %>
+            </div>
+            <div class="settings-actions">
+              <button type="submit" class="abtn abtn-dark"><%- icon('check', 16) %>Save store details</button>
+            </div>
+          </form>
+
+          <aside class="panel receipt-card receipt-preview" aria-label="Receipt preview">
+            <div class="receipt-top">
+              <img src="/Luminous%20Metallic%20Crescent%20Emblem.png" alt="" />
+              <span class="sidebar-wordmark" data-show="store_name"><%= store.store_name %></span>
+              <p data-show="store_address"><%= store.store_address %></p>
+              <p data-show="store_contact"><%= store.store_contact %></p>
+            </div>
+            <div class="receipt-body">
+              <ul class="receipt-lines">
+                <li><span><span class="strong">Sample item</span><span class="sub">1 × ₱450.00</span></span><span>₱450.00</span></li>
+              </ul>
+              <div class="receipt-sums"><div class="receipt-total"><span>Total</span><span>₱450.00</span></div></div>
+              <p class="receipt-footer" data-show="receipt_footer"><%= store.receipt_footer %></p>
+            </div>
+          </aside>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</main>
+<script>
+  (function () {
+    var toggle = document.getElementById('showPasswords');
+    if (toggle) toggle.addEventListener('change', function () {
+      document.querySelectorAll('.settings-form input[data-pw]').forEach(function (input) {
+        input.type = toggle.checked ? 'text' : 'password';
+      });
+    });
+    document.querySelectorAll('[data-preview]').forEach(function (input) {
+      var target = document.querySelector('[data-show="' + input.dataset.preview + '"]');
+      if (!target) return;
+      var sync = function () { target.textContent = input.value; target.hidden = !input.value.trim(); };
+      input.addEventListener('input', sync);
+      sync();
+    });
+  })();
+</script>
+<%- include('partials/foot') %>

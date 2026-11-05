@@ -1,6 +1,7 @@
 const { query, getClient } = require('../config/db');
 const { generateReceiptNo } = require('../utils/helpers');
 const { setFlash } = require('../middleware/flash');
+const { getStoreSettings } = require('../utils/storeSettings');
 
 async function posScreen(req, res, next) {
   try {
@@ -106,8 +107,11 @@ async function viewReceipt(req, res, next) {
     const { rows } = await query('SELECT * FROM sales WHERE id = $1', [req.params.id]);
     const sale = rows[0];
     if (!sale) return res.status(404).render('error', { title: 'Not Found', message: 'Receipt not found.' });
-    const { rows: items } = await query('SELECT * FROM sale_items WHERE sale_id = $1', [sale.id]);
-    res.render('pos/receipt', { title: 'Receipt', sale, items });
+    const [{ rows: items }, store] = await Promise.all([
+      query('SELECT * FROM sale_items WHERE sale_id = $1', [sale.id]),
+      getStoreSettings(),
+    ]);
+    res.render('pos/receipt', { title: 'Receipt', sale, items, store });
   } catch (err) {
     next(err);
   }
