@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const bcrypt = require('bcryptjs');
 const { Pool, types } = require('pg');
 
 // Return NUMERIC columns (money, quantities stored as NUMERIC) as JS numbers
@@ -21,12 +22,28 @@ const pool = new Pool({
   ssl: /localhost|127\.0\.0\.1/.test(connectionString) ? false : { rejectUnauthorized: false },
 });
 
+// Default admin account, created automatically when the database has no
+// admin yet, so a fresh deployment can be signed into without running the
+// seed script. Change this password after the first sign-in.
+const DEFAULT_ADMIN = { username: 'admin01', password: 'Admin@123', fullName: 'Administrator' };
+
+async function ensureDefaultAdmin() {
+  const { rows } = await pool.query("SELECT 1 FROM users WHERE role = 'admin' LIMIT 1");
+  if (rows.length) return;
+  await pool.query(
+    `INSERT INTO users (username, password_hash, full_name, role)
+     VALUES ($1, $2, $3, 'admin')
+     ON CONFLICT (username) DO NOTHING`,
+    [DEFAULT_ADMIN.username, bcrypt.hashSync(DEFAULT_ADMIN.password, 10), DEFAULT_ADMIN.fullName]
+  );
+}
+
 let schemaReady = null;
 
 function ensureSchema() {
   if (!schemaReady) {
     const schema = fs.readFileSync(path.join(__dirname, '..', 'db', 'schema.sql'), 'utf8');
-    schemaReady = pool.query(schema).catch((err) => {
+    schemaReady = pool.query(schema).then(ensureDefaultAdmin).catch((err) => {
       schemaReady = null; // allow a retry on the next call if it failed
       throw err;
     });
@@ -47,4 +64,4 @@ async function getClient() {
   return pool.connect();
 }
 
-module.exports = { query, getClient, pool, ensureSchema };
+module.exports = { query, getClient, pool, ensureSchema, DEFAULT_ADMIN };
