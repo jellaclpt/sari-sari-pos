@@ -1,6 +1,6 @@
 require('dotenv').config();
 const bcrypt = require('bcryptjs');
-const { query, pool } = require('../config/db');
+const { query, pool, DEFAULT_ADMIN } = require('../config/db');
 
 async function upsertUser({ username, password, fullName, role }) {
   const { rows } = await query('SELECT id FROM users WHERE username = $1', [username]);
@@ -32,7 +32,7 @@ async function upsertProduct(p) {
 }
 
 async function main() {
-  await upsertUser({ username: 'admin', password: 'admin123', fullName: 'Store Owner', role: 'admin' });
+  await upsertUser({ ...DEFAULT_ADMIN, role: 'admin' });
   await upsertUser({ username: 'cashier1', password: 'cashier123', fullName: 'Juana Cruz', role: 'sales_rep' });
 
   const snacks = await upsertCategory('Snacks');

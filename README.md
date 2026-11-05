@@ -96,8 +96,10 @@ vercel.json               # Vercel routing + function config
 
    | Role | Username | Password |
    |---|---|---|
-   | Admin | `admin` | `admin123` |
+   | Admin | `admin01` | `Admin@123` |
    | Sales Rep | `cashier1` | `cashier123` |
+
+   The admin account is also created automatically the first time the app connects to a database that has no admin yet, so you can sign in as `admin01` even without seeding.
 
    **Change these passwords (or re-seed with different ones) before using this with real data.**
 
@@ -138,7 +140,7 @@ vercel.json               # Vercel routing + function config
    node -r dotenv/config src/db/seed.js dotenv_config_path=.env.production.local
    ```
 
-   Seeding is how the first Admin account gets created: access requests need an existing admin to approve them.
+   If you skip seeding, the default `admin01` / `Admin@123` admin account is still created automatically on first connection — sign in and change its password right away.
 
 6. **Visit your deployment** — Vercel gives you a `*.vercel.app` URL (or your custom domain). Sign in, and you're running.
 
