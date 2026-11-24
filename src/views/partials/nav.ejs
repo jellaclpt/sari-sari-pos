@@ -1,7 +1,8 @@
-<% if (currentUser && currentUser.role === 'admin' && !currentUser.mustChangePassword) { %>
+<% if (currentUser && ['admin', 'sales_rep'].includes(currentUser.role) && !currentUser.mustChangePassword) { %>
 <%
   const path = typeof currentPath !== 'undefined' ? currentPath : '';
-  const links = [
+  const isAdmin = currentUser.role === 'admin';
+  const links = isAdmin ? [
     { href: '/admin/dashboard', label: 'Dashboard', icon: 'dashboard' },
     { href: '/admin/products', label: 'Products', icon: 'tag' },
     { href: '/admin/sales', label: 'Sales', icon: 'receipt' },
@@ -9,11 +10,14 @@
       badge: typeof reportsToday !== 'undefined' ? reportsToday : 0, badgeTitle: 'Reports filed today' },
     { href: '/admin/users', label: 'Users', icon: 'users',
       badge: typeof pendingRequests !== 'undefined' ? pendingRequests : 0, badgeTitle: 'Requests waiting for review' },
-    { href: '/settings', label: 'Settings', icon: 'settings' },
+  ] : [
+    { href: '/pos', label: 'Point of Sale', icon: 'receipt' },
+    { href: '/pos/inventory', label: 'Inventory', icon: 'clipboard' },
   ];
+  links.push({ href: '/settings', label: 'Settings', icon: 'settings' });
 %>
 <aside class="sidebar">
-  <a href="/admin/dashboard" class="sidebar-brand">
+  <a href="<%= links[0].href %>" class="sidebar-brand">
     <img src="/Luminous%20Metallic%20Crescent%20Emblem.png" alt="" />
     <span>
       <span class="sidebar-wordmark">MOON</span>
@@ -21,7 +25,7 @@
     </span>
   </a>
   <nav class="sidebar-nav" aria-label="Main">
-    <% links.forEach(l => { const active = path === l.href || path.startsWith(l.href + '/'); %>
+    <% links.forEach(l => { const active = path === l.href || (l.href === '/pos' ? path.startsWith('/pos/receipt/') : path.startsWith(l.href + '/')); %>
       <a href="<%= l.href %>" class="sidebar-link<%= active ? ' is-active' : '' %>"<%- active ? ' aria-current="page"' : '' %>>
         <%- icon(l.icon, 18) %>
         <span><%= l.label %></span>
@@ -34,7 +38,7 @@
       <span class="avatar"><%= h.initials(currentUser.fullName) %></span>
       <span class="sidebar-user-text">
         <strong><%= currentUser.fullName %></strong>
-        <span>Administrator</span>
+        <span><%= isAdmin ? 'Administrator' : 'Sales Rep' %></span>
       </span>
     </a>
     <form method="POST" action="/logout">

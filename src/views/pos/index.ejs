@@ -1,9 +1,9 @@
 <%- include('../partials/head') %>
 <%- include('../partials/nav') %>
-<main class="container pos-layout">
+<main class="page rep-page pos-layout">
   <div class="pos-products">
-    <h1>Point of Sale</h1>
-    <input type="search" id="productSearch" placeholder="Search product or scan barcode..." autofocus />
+    <h1 class="page-title">Point of Sale</h1>
+    <input class="ainput" type="search" id="productSearch" aria-label="Search products or scan barcode" placeholder="Search product or scan barcode..." autofocus />
     <div class="product-grid" id="productGrid">
       <% products.forEach(p => { %>
         <button
@@ -23,12 +23,14 @@
     </div>
   </div>
 
-  <div class="pos-cart">
-    <h2>Cart</h2>
-    <table class="table" id="cartTable">
+  <div class="panel pos-cart">
+    <h2 class="panel-title">Cart</h2>
+    <div class="table-wrap">
+    <table class="atable" id="cartTable">
       <thead><tr><th>Item</th><th>Price</th><th>Qty</th><th>Subtotal</th><th></th></tr></thead>
       <tbody id="cartBody"></tbody>
     </table>
+    </div>
     <div class="cart-total">Total: <span id="cartTotal">₱0.00</span></div>
 
     <form method="POST" action="/pos/checkout" id="checkoutForm">
@@ -40,13 +42,13 @@
         <label><input type="radio" name="payment_method" value="card" /><span>Card</span></label>
       </fieldset>
       <label id="amountPaidField">Amount Paid
-        <input type="number" step="0.01" min="0" name="amount_paid" id="amountPaid" required />
+        <input class="ainput" type="number" step="0.01" min="0" name="amount_paid" id="amountPaid" required />
       </label>
       <label id="paymentRefField" hidden>Reference No.
-        <input type="text" name="payment_ref" id="paymentRef" maxlength="60" autocomplete="off" placeholder="From the GCash or card slip" />
+        <input class="ainput" type="text" name="payment_ref" id="paymentRef" maxlength="60" autocomplete="off" placeholder="From the GCash or card slip" />
       </label>
       <div class="cart-change" id="changeRow">Change: <span id="changeAmount">₱0.00</span></div>
-      <button type="submit" class="btn btn-primary btn-block" id="checkoutBtn" disabled>Complete Sale</button>
+      <button type="submit" class="abtn abtn-dark abtn-block" id="checkoutBtn" disabled>Complete Sale</button>
     </form>
   </div>
 </main>

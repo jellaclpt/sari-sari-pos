@@ -74,12 +74,12 @@
         <td>${escapeHtml(item.name)}</td>
         <td>${peso(item.price)}</td>
         <td class="qty-controls">
-          <button type="button" data-action="dec" data-id="${item.id}" class="btn btn-small">−</button>
+          <button type="button" data-action="dec" data-id="${item.id}" class="abtn abtn-sm">−</button>
           ${item.qty}
-          <button type="button" data-action="inc" data-id="${item.id}" class="btn btn-small">+</button>
+          <button type="button" data-action="inc" data-id="${item.id}" class="abtn abtn-sm">+</button>
         </td>
         <td>${peso(subtotal)}</td>
-        <td><button type="button" data-action="remove" data-id="${item.id}" class="btn btn-small btn-danger">✕</button></td>
+        <td><button type="button" data-action="remove" data-id="${item.id}" class="abtn abtn-sm abtn-danger-outline">✕</button></td>
       `;
       cartBody.appendChild(tr);
     });

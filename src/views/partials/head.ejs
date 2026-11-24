@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title><%= typeof title !== 'undefined' ? title + ' · MOON' : 'MOON' %></title>
-  <% const isAdminLayout = currentUser && currentUser.role === 'admin' && !currentUser.mustChangePassword; %>
-  <% const isThemed = isAdminLayout || (typeof themed !== 'undefined' && themed); %>
+  <% const hasSidebar = currentUser && ['admin', 'sales_rep'].includes(currentUser.role) && !currentUser.mustChangePassword; %>
+  <% const isThemed = hasSidebar || (typeof themed !== 'undefined' && themed); %>
   <% if (isThemed) { %>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -14,4 +14,4 @@
   <link rel="stylesheet" href="/css/style.css" />
   <% if (isThemed) { %><link rel="stylesheet" href="/css/admin.css" /><% } %>
 </head>
-<body<%- isAdminLayout ? ' class="admin-body"' : isThemed ? ' class="admin-body admin-body-top"' : '' %>>
+<body<%- hasSidebar ? ' class="admin-body"' : isThemed ? ' class="admin-body admin-body-top"' : '' %>>

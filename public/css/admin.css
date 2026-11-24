@@ -843,3 +843,22 @@ select.ainput:disabled { background-color: var(--a-soft); color: var(--a-faint);
   body.print-receipt .receipt-actions-a { display: none; }
   .receipt-top { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* Sales workspace */
+.rep-page {
+  --primary: var(--a-ink);
+  --border: var(--a-line-strong);
+  --muted: var(--a-muted);
+}
+.rep-page > .page-title, .rep-page .panel-title { margin-bottom: 16px; }
+.rep-page .panel + .panel { margin-top: 20px; }
+.rep-page .product-tile { font-family: inherit; color: var(--a-text); }
+.rep-page .product-tile:hover { background: var(--a-soft); }
+.rep-page .pay-methods input:checked + span { background: var(--a-ink); color: white; }
+.rep-page .receipt { width: 100%; }
+.rep-page .pos-products { min-width: 0; }
+.rep-page.pos-layout { grid-template-columns: minmax(0, 3fr) minmax(360px, 2fr); }
+@media (max-width: 1100px) {
+  .rep-page.pos-layout { grid-template-columns: minmax(0, 1fr); }
+  .rep-page .pos-cart { position: static; }
+}

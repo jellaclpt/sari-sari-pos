@@ -1,35 +1,36 @@
 <%- include('../partials/head') %>
 <%- include('../partials/nav') %>
-<main class="container">
-  <h1>Inventory</h1>
+<main class="page rep-page">
+  <h1 class="page-title">Inventory</h1>
 
-  <div class="card">
-    <h2>Submit Inventory Report</h2>
+  <div class="panel">
+    <h2 class="panel-title">Submit Inventory Report</h2>
     <form method="POST" action="/pos/inventory/report" class="form-grid">
       <label>Product
-        <select name="product_id" required>
+        <select class="ainput" name="product_id" required>
           <% products.forEach(p => { %>
             <option value="<%= p.id %>"><%= p.name %> (<%= p.stock_quantity %> <%= p.unit %> in stock)</option>
           <% }) %>
         </select>
       </label>
       <label>Type
-        <select name="type" required>
+        <select class="ainput" name="type" required>
           <option value="restock">Restock (received new stock)</option>
           <option value="damaged">Damaged</option>
           <option value="lost">Lost / Missing</option>
           <option value="correction">Correction</option>
         </select>
       </label>
-      <label>Quantity <input type="number" name="quantity" min="1" required /></label>
-      <label>Note <input type="text" name="note" placeholder="Optional remarks" /></label>
-      <button type="submit" class="btn btn-primary">Submit Report</button>
+      <label>Quantity <input class="ainput" type="number" name="quantity" min="1" required /></label>
+      <label>Note <input class="ainput" type="text" name="note" placeholder="Optional remarks" /></label>
+      <button type="submit" class="abtn abtn-dark">Submit Report</button>
     </form>
   </div>
 
-  <div class="card">
-    <h2>Current Stock</h2>
-    <table class="table">
+  <div class="panel">
+    <h2 class="panel-title">Current Stock</h2>
+    <div class="table-wrap">
+    <table class="atable">
       <thead><tr><th>Product</th><th>Stock</th><th>Reorder Level</th></tr></thead>
       <tbody>
         <% products.forEach(p => { %>
@@ -41,14 +42,16 @@
         <% }) %>
       </tbody>
     </table>
+    </div>
   </div>
 
-  <div class="card">
-    <h2>My Recent Reports</h2>
+  <div class="panel">
+    <h2 class="panel-title">My Recent Reports</h2>
     <% if (myReports.length === 0) { %>
       <p class="muted">You haven't submitted any reports yet.</p>
     <% } else { %>
-      <table class="table">
+      <div class="table-wrap">
+    <table class="atable">
         <thead><tr><th>Product</th><th>Type</th><th>Change</th><th>Note</th><th>When</th></tr></thead>
         <tbody>
           <% myReports.forEach(r => { %>
@@ -62,6 +65,7 @@
           <% }) %>
         </tbody>
       </table>
+    </div>
     <% } %>
   </div>
 </main>
