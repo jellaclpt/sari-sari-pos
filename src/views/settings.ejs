@@ -5,7 +5,10 @@
     { id: 'profile', label: 'Profile', icon: 'user', sub: 'Your name and contact' },
     { id: 'password', label: 'Password', icon: 'lock', sub: 'Change your sign-in password' },
   ];
-  if (isAdmin) tabs.push({ id: 'store', label: 'Store details', icon: 'store', sub: 'What prints on receipts' });
+  if (isAdmin) {
+    tabs.push({ id: 'categories', label: 'Categories', icon: 'tag', sub: 'Groups and subcategories' });
+    tabs.push({ id: 'store', label: 'Store details', icon: 'store', sub: 'What prints on receipts' });
+  }
   const v = (key, fallback) => (key in values ? values[key] : fallback);
   const err = (key) => errors[key] ? `<p class="field-error" id="${key}-error">${errors[key]}</p>` : '';
   const invalid = (key) => errors[key] ? ` is-invalid" aria-invalid="true" aria-describedby="${key}-error` : '';
@@ -107,6 +110,101 @@
           </div>
         </form>
         <p class="settings-note">Forgot your current password? Sign out and use <strong>Forgot password</strong> on the sign-in page<%= isAdmin ? ', or have another admin reset it from Users' : ' to ask an admin for a temporary one' %>.</p>
+      <% } %>
+
+      <% if (section === 'categories' && isAdmin) { %>
+        <form method="POST" action="/settings/categories" class="panel settings-form">
+          <div class="panel-head">
+            <div>
+              <h2 class="panel-title">Add category</h2>
+              <p class="panel-sub">Create a top-level category or place it under an existing category.</p>
+            </div>
+          </div>
+          <div class="category-add">
+            <div class="afield">
+              <label for="category_name">Category name</label>
+              <input class="ainput" id="category_name" name="name" maxlength="60" required placeholder="e.g. Tops" />
+            </div>
+            <div class="afield">
+              <label for="category_parent">Parent category</label>
+              <select class="ainput" id="category_parent" name="parent_id">
+                <option value="">Top-level</option>
+                <% categoryGroups.forEach(group => { %>
+                  <option value="<%= group.id %>"><%= group.name %></option>
+                <% }) %>
+              </select>
+            </div>
+            <button type="submit" class="abtn abtn-dark"><%- icon('plus', 16) %>Add</button>
+          </div>
+        </form>
+
+        <section class="panel settings-form">
+          <div class="panel-head">
+            <div>
+              <h2 class="panel-title">Categories</h2>
+              <p class="panel-sub">Rename categories, change their parent, or remove unused categories.</p>
+            </div>
+          </div>
+          <% if (!categoryGroups.length) { %>
+            <p class="category-empty">No categories yet.</p>
+          <% } else { %>
+            <div class="category-list">
+              <% categoryGroups.forEach(group => { %>
+                <div class="category-group">
+                  <div class="category-row">
+                    <form method="POST" action="/settings/categories/<%= group.id %>/update">
+                      <div class="afield">
+                        <label class="sr-only" for="category_<%= group.id %>">Category name</label>
+                        <input class="ainput" id="category_<%= group.id %>" name="name" maxlength="60" value="<%= group.name %>" required />
+                      </div>
+                      <div class="afield">
+                        <label class="sr-only" for="parent_<%= group.id %>">Parent category</label>
+                        <select class="ainput" id="parent_<%= group.id %>" name="parent_id">
+                          <option value="">Top-level</option>
+                          <% categoryGroups.filter(option => option.id !== group.id).forEach(option => { %>
+                            <option value="<%= option.id %>"<%= group.parent_id === option.id ? ' selected' : '' %>><%= option.name %></option>
+                          <% }) %>
+                        </select>
+                      </div>
+                      <div class="category-row-actions">
+                        <button type="submit" class="abtn abtn-light" title="Save category"><%- icon('check', 16) %><span>Save</span></button>
+                        <button type="submit" class="abtn abtn-light" formaction="/settings/categories/<%= group.id %>/delete" formnovalidate onclick="return confirm('Delete this category? Categories used by products cannot be deleted.')" title="Delete category"><%- icon('trash', 16) %></button>
+                      </div>
+                    </form>
+                  </div>
+                  <% if (group.children.length) { %>
+                    <div class="category-children">
+                      <% group.children.forEach(child => { %>
+                        <div class="category-child">
+                          <form method="POST" action="/settings/categories/<%= child.id %>/update">
+                            <span class="category-child-line"></span>
+                            <div class="afield">
+                              <label class="sr-only" for="category_<%= child.id %>">Subcategory name</label>
+                              <input class="ainput" id="category_<%= child.id %>" name="name" maxlength="60" value="<%= child.name %>" required />
+                            </div>
+                            <div class="afield">
+                              <label class="sr-only" for="parent_<%= child.id %>">Parent category</label>
+                              <select class="ainput" id="parent_<%= child.id %>" name="parent_id">
+                                <option value="">Top-level</option>
+                                <% categoryGroups.forEach(option => { %>
+                                  <option value="<%= option.id %>"<%= child.parent_id === option.id ? ' selected' : '' %>><%= option.name %></option>
+                                <% }) %>
+                              </select>
+                            </div>
+                            <div class="category-row-actions">
+                              <button type="submit" class="abtn abtn-light" title="Save subcategory"><%- icon('check', 16) %><span>Save</span></button>
+                              <button type="submit" class="abtn abtn-light" formaction="/settings/categories/<%= child.id %>/delete" formnovalidate onclick="return confirm('Delete this subcategory? Subcategories used by products cannot be deleted.')" title="Delete subcategory"><%- icon('trash', 16) %></button>
+                            </div>
+                          </form>
+                        </div>
+                      <% }) %>
+                    </div>
+                  <% } %>
+                </div>
+              <% }) %>
+            </div>
+          <% } %>
+        </section>
       <% } %>
 
       <% if (section === 'store' && isAdmin) { %>

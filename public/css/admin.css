@@ -746,6 +746,21 @@ select.ainput:disabled { background-color: var(--a-soft); color: var(--a-faint);
 .settings-fields-single { grid-template-columns: minmax(0, 420px); }
 .settings-actions { display: flex; justify-content: flex-end; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--a-line); }
 .settings-note { margin: 0; font-size: 0.82rem; color: var(--a-muted); }
+.category-add { display: grid; grid-template-columns: minmax(0, 1fr) 180px auto; align-items: end; gap: 12px; }
+.category-add .afield { margin: 0; }
+.category-list { display: flex; flex-direction: column; }
+.category-group { border-top: 1px solid var(--a-line); padding: 14px 0 2px; }
+.category-group:first-child { border-top: 0; }
+.category-row { display: grid; grid-template-columns: minmax(140px, 1fr) 180px auto; align-items: end; gap: 10px; }
+.category-row form, .category-row-inline { display: contents; }
+.category-row .afield { margin: 0; }
+.category-row-actions { display: flex; gap: 6px; align-items: center; }
+.category-children { margin-left: 24px; padding-top: 10px; }
+.category-child { display: grid; grid-template-columns: 18px minmax(140px, 1fr) 180px auto; align-items: end; gap: 10px; }
+.category-child form { display: contents; }
+.category-child .afield { margin: 0; }
+.category-child-line { height: 1px; background: var(--a-line); }
+.category-empty { padding: 28px 0 12px; color: var(--a-muted); text-align: center; }
 .check-row { display: inline-flex; align-items: center; gap: 8px; font-size: 0.84rem; color: var(--a-muted); cursor: pointer; }
 .check-row input { width: 16px; height: 16px; margin: 0; accent-color: var(--a-ink); }
 .store-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; align-items: start; gap: 18px; }
@@ -807,6 +822,10 @@ select.ainput:disabled { background-color: var(--a-soft); color: var(--a-faint);
 }
 @media (max-width: 560px) {
   .settings-fields, .modal-grid { grid-template-columns: minmax(0, 1fr); }
+  .category-add, .category-row, .category-child { grid-template-columns: minmax(0, 1fr); }
+  .category-row-actions { justify-content: flex-end; }
+  .category-children { margin-left: 12px; }
+  .category-child-line { display: none; }
   .request-list li { flex-wrap: wrap; }
   .request-list .row-actions { width: 100%; justify-content: flex-start; }
   .settings-tab { padding: 9px 10px; gap: 8px; }
